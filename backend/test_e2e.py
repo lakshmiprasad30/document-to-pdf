@@ -4,13 +4,15 @@ import time
 import requests
 from pypdf import PdfReader
 
-API_URL = "http://localhost:8000/api/v1"
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+API_URL = "https://localhost/api/v1"
 
 
 def wait_for_job(job_id):
     for i in range(15):
         time.sleep(2)
-        status_resp = requests.get(f"{API_URL}/jobs/{job_id}")
+        status_resp = requests.get(f"{API_URL}/jobs/{job_id}", verify=False)
         status_data = status_resp.json()
         print(f"[{i}] Status for {job_id}:", status_data["status"])
         if status_data["status"] == "completed":
@@ -23,7 +25,7 @@ def wait_for_job(job_id):
 
 
 def download_pdf(job_id, filename):
-    pdf_resp = requests.get(f"{API_URL}/files/{job_id}")
+    pdf_resp = requests.get(f"{API_URL}/files/{job_id}", verify=False)
     if pdf_resp.status_code == 200:
         with open(filename, "wb") as pdf_f:
             pdf_f.write(pdf_resp.content)
@@ -39,6 +41,7 @@ def upload_file(filename, mime_type):
         response = requests.post(
             f"{API_URL}/jobs",
             files={"file": (filename, f, mime_type)},
+            verify=False,
         )
     if response.status_code != 200:
         print(f"Upload {filename} failed:", response.text)

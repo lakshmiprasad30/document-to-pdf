@@ -19,5 +19,5 @@ RUN chown -R appuser:appuser /app
 USER appuser
 ENV PYTHONPATH=/app
 
-# Start the RQ worker
-CMD ["rq", "worker", "-u", "redis://redis:6379/0", "default"]
+# Start the RQ worker using the environment variable
+CMD ["sh", "-c", "rq worker -u ${REDIS_URL} default"]

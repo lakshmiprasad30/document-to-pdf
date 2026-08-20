@@ -101,3 +101,24 @@ python test_e2e.py
 - **File Limits**: File size is capped globally at 50MB per upload (configurable).
 - **Authentication**: Currently an open MVP. Rate limits exist but authentication/user sessions are out-of-scope for Phase 6.
 - **Storage**: Outputs are saved to a temporary local volume, and must be downloaded before the `CLEANUP_TTL_SECONDS` sweeps them. Cloud blob storage (e.g. S3) is not yet integrated.
+
+## Deployment
+
+This repository provides two deployment configurations:
+
+### 1. Local Development
+For active development with hot-reloading:
+```bash
+docker compose up -d --build
+```
+
+### 2. Production Deployment
+To deploy on a single Virtual Machine (e.g. AWS EC2, DigitalOcean, Hetzner) securely with automated HTTPS:
+
+1. Copy `.env.example` to `.env` and configure your domains.
+2. Run the production compose file:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   ```
+   
+*Note: The production setup uses Caddy to automatically handle Let's Encrypt SSL termination. Ensure your DNS points to your server's public IP.*
