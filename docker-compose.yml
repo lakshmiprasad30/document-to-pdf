@@ -1,0 +1,73 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - temp_storage:/tmp/uploads
+      - temp_storage:/tmp/outputs
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CONVERSION_TIMEOUT_SECONDS=300
+    depends_on:
+      - redis
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    volumes:
+      - ./backend:/app
+      - temp_storage:/tmp/uploads
+      - temp_storage:/tmp/outputs
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CONVERSION_TIMEOUT_SECONDS=300
+    depends_on:
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  redis:
+    image: redis:alpine
+    user: "redis"
+    ports:
+      - "6379:6379"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  temp_storage:

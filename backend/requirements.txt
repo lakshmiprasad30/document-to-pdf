@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+redis
+rq
+pydantic-settings
+pypdf
+python-multipart
+Pillow
+fpdf2

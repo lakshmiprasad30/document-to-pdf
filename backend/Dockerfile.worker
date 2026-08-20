@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+WORKDIR /app
+
+RUN useradd -m -r appuser && \
+    mkdir -p /tmp/uploads /tmp/outputs && \
+    chown -R appuser:appuser /app /tmp/uploads /tmp/outputs
+
+# Install LibreOffice and minimal JRE
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress default-jre \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN chown -R appuser:appuser /app
+
+USER appuser
+ENV PYTHONPATH=/app
+
+# Start the RQ worker
+CMD ["rq", "worker", "-u", "redis://redis:6379/0", "default"]
