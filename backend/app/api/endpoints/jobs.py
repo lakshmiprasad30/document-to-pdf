@@ -11,9 +11,6 @@ from app.schemas.job import JobResponse, JobStatusResponse
 from app.worker.tasks import process_job
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 router = APIRouter()
 
@@ -36,7 +33,7 @@ def check_rate_limit(request: Request):
         if isinstance(e, HTTPException):
             raise
         logger.error(f"Redis rate limiting error: {e}")
-        # Fail open if Redis is temporarily unreachable for rate limiting?
+        # Fail open if Redis is temporarily unreachable for rate limiting
 
 
 SUPPORTED_EXTENSIONS = {".docx", ".xlsx", ".pptx", ".jpg", ".jpeg", ".png", ".webp", ".txt"}
@@ -208,7 +205,7 @@ def get_job_status(job_id: str):
     }
 
     status = job.get_status()
-    print(f"DEBUG: job_id={job_id} status_type={type(status)} status_value={status}")
+    logger.debug(f"job_id={job_id} status_type={type(status).__name__} status_value={status}")
     mapped_status = status_map.get(status, "processing")
 
     error = None
