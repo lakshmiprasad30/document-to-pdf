@@ -22,10 +22,12 @@ export default function Converter() {
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [mergeState, setMergeState] = useState<UIState>("idle");
   const [mergeResultId, setMergeResultId] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollIntervalsRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
   const mergePollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const dragCounter = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -111,15 +113,21 @@ export default function Converter() {
 
   const handleUploadAll = async () => {
     const idleFiles = files.filter(f => f.uiState === "idle" || f.uiState === "failed");
-    for (const f of idleFiles) {
-      updateFile(f.id, { uiState: "uploading", errorMsg: null });
-      try {
-        const res = await uploadJob(f.file);
-        updateFile(f.id, { jobId: res.job_id, uiState: "queued" });
-        startPolling(f.id, res.job_id);
-      } catch (err: unknown) {
-        updateFile(f.id, { uiState: "failed", errorMsg: err instanceof Error ? err.message : "Upload failed" });
+    if (idleFiles.length === 0) return;
+    setIsConverting(true);
+    try {
+      for (const f of idleFiles) {
+        updateFile(f.id, { uiState: "uploading", errorMsg: null });
+        try {
+          const res = await uploadJob(f.file);
+          updateFile(f.id, { jobId: res.job_id, uiState: "queued" });
+          startPolling(f.id, res.job_id);
+        } catch (err: unknown) {
+          updateFile(f.id, { uiState: "failed", errorMsg: err instanceof Error ? err.message : "Upload failed" });
+        }
       }
+    } finally {
+      setIsConverting(false);
     }
   };
 
@@ -165,7 +173,7 @@ export default function Converter() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-100">
+    <div className="w-full max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 transition-colors">
       
       {globalError && (
         <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-3">
@@ -180,7 +188,8 @@ export default function Converter() {
       {/* DROPZONE */}
       <div 
         className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors border-blue-200 bg-blue-50/50 hover:bg-blue-50 mb-6"
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current++; if (dragCounter.current === 1) { e.currentTarget.classList.add('bg-blue-100', 'scale-[1.02]', 'shadow-md'); } }}
+        onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); dragCounter.current--; if (dragCounter.current === 0) { e.currentTarget.classList.remove('bg-blue-100', 'scale-[1.02]', 'shadow-md'); } }}
         onDrop={onDrop}
       >
         <input 
@@ -211,13 +220,24 @@ export default function Converter() {
       {/* FILE LIST */}
       {files.length > 0 && (
         <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-gray-700">Files ({files.length})</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold text-gray-700">Files ({files.length})</h4>
+            {files.length > 0 && (
+              <button
+                onClick={() => { setFiles([]); setGlobalError(null); }}
+                className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
           {files.map(f => (
-            <div key={f.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center gap-4">
+            <div key={f.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex items-center gap-4 transition-colors">
               <FileText className="text-blue-500 shrink-0" size={24} />
               <div className="flex-1 min-w-0">
                 <p className="truncate font-medium text-gray-800 text-sm">{f.file.name}</p>
                 <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-400">{(f.file.size / 1024).toFixed(1)} KB</span>
                   {f.uiState === "idle" && <span className="text-xs text-gray-500">Ready</span>}
                   {f.uiState === "uploading" && <span className="text-xs text-blue-500 flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Uploading...</span>}
                   {f.uiState === "queued" && <span className="text-xs text-purple-500">Queued</span>}
@@ -248,10 +268,11 @@ export default function Converter() {
         <div className="flex flex-wrap gap-4 border-t pt-6">
           <button 
             onClick={handleUploadAll}
-            disabled={!files.some(f => f.uiState === "idle" || f.uiState === "failed")}
-            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            disabled={!files.some(f => f.uiState === "idle" || f.uiState === "failed") || isConverting}
+            className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
-            Convert All
+            {isConverting && <Loader2 size={16} className="animate-spin" />}
+            {isConverting ? "Converting..." : "Convert All"}
           </button>
           
           {files.filter(f => f.uiState === "completed").length >= 2 && (

@@ -51,9 +51,9 @@ def test_upload_valid_docx(mock_job_queue):
 
 
 def test_upload_invalid_extension(mock_job_queue):
-    files = {"file": ("test.txt", b"hello", "text/plain")}
+    files = {"file": ("test.exe", b"hello", "application/x-msdownload")}
     response = client.post("/api/v1/jobs", files=files)
-    assert response.status_code == 400
+    assert response.status_code == 415
     assert "supported" in response.json()["detail"]
 
 
@@ -157,7 +157,7 @@ def test_upload_invalid_signature():
     }
     response = client.post("/api/v1/jobs", files=files)
     assert response.status_code == 400
-    assert "Invalid DOCX" in response.json()["detail"]
+    assert "Invalid" in response.json()["detail"]
 
 
 def test_upload_oversized_file(monkeypatch, mock_job_queue):

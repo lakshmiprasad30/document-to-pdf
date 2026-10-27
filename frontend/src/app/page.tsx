@@ -17,7 +17,7 @@ export default function Home() {
             Convert Documents to PDF
           </h2>
           <p className="text-lg text-gray-600">
-            Fast, secure, and accurate conversion for your Word documents. Files are processed in memory and deleted after conversion.
+            Fast, secure, and accurate conversion for your documents and images — DOCX, XLSX, PPTX, TXT, JPG, PNG, and WEBP. Files are processed in memory and automatically deleted after conversion.
           </p>
         </div>
 

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -9,6 +10,13 @@ from app.api.endpoints.jobs import router as jobs_router
 from app.api.health import router as health_router
 from app.core.config import settings
 from app.worker.cleanup import cleanup_task
+
+# Centralized logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
 
 
 @asynccontextmanager
